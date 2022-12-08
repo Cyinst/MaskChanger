@@ -99,7 +99,6 @@ class Mask2FormerHead(BaseDecodeHead):
         self.level_embed = nn.Embedding(self.num_transformer_feat_level,
                                         feat_channels)
 
-        # self.cls_embed = nn.Linear(feat_channels, self.num_classes + 1)
         self.mask_embed = nn.Sequential(
             nn.Linear(feat_channels, feat_channels), nn.ReLU(inplace=True),
             # nn.Linear(feat_channels, feat_channels), nn.ReLU(inplace=True),
@@ -156,8 +155,8 @@ class Mask2FormerHead(BaseDecodeHead):
         #   (batch_size * num_head, num_queries, h*w)
         attn_mask = attn_mask.flatten(2).unsqueeze(1).repeat(
             (1, self.num_heads, 1, 1)).flatten(0, 1)
-        # attn_mask = attn_mask.sigmoid() < 0.5  # True/False matrix
-        # attn_mask = attn_mask.detach()
+        attn_mask = attn_mask.sigmoid() < 0.5  # True/False matrix
+        attn_mask = attn_mask.detach()
         mask_pred = self.segconv(mask_pred)
         return mask_pred, attn_mask  # (b,q,h_max,w_max), (b*(nh 8),q,h*w)
 
@@ -193,10 +192,11 @@ class Mask2FormerHead(BaseDecodeHead):
         """
         batch_size = len(img_metas)
         feat, feats1, feats2 = feats
-        # multi_scale_memorys1 = []
-        # multi_scale_memorys2 = []
+
         mask_features1, multi_scale_memorys1 = self.pixel_decoder(feats1)  # (b,c,h_max,w_max), [bchw](low to high)
         mask_features2, multi_scale_memorys2 = self.pixel_decoder(feats2)  # (b,c,h_max,w_max), [bchw](low to high)
+        # multi_scale_memorys1 = []
+        # multi_scale_memorys2 = []
         # for i in range(len(feats2)):
         #     multi_scale_memorys2.append(feats2[3 - i])
         # mask_features = feat[0] + resize(
